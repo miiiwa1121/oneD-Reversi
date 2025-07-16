@@ -1,104 +1,75 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
-#define MAX_S_LEN 1000001
-#define MAX_T_LEN 1000001
-#define DEQUE_SIZE (MAX_S_LEN + MAX_T_LEN + 5)
-#define START_IDX (MAX_T_LEN + 2)
-
-typedef struct {
-    char color;
-    long long count;
-} Block;
-
-static char S[MAX_S_LEN];
-static char T[MAX_T_LEN];
-static Block deque[DEQUE_SIZE];
+#define MAX_SIZE 20000  // 余裕を持った盤面サイズ
 
 int main() {
-    if (scanf("%s", S) != 1) return 1;
-    if (scanf("%s", T) != 1) return 1;
+    char S[MAX_SIZE];  // 入力の棋譜
+    char board[MAX_SIZE];  // 1次元リバーシの盤面
+    int left, right;  // 盤面の両端
+    int turn = 0;  // 0: 黒(b)、1: 白(w)
 
-    int s_len = strlen(S);
-    int t_len = strlen(T);
+    // 盤面を初期化
+    memset(board, '.', sizeof(board));
 
-    int head = START_IDX;
-    int tail = START_IDX - 1;
+    // 入力を取得
+    scanf("%s", S);
 
-    if (s_len > 0) {
-        tail++;
-        deque[tail].color = S[0];
-        deque[tail].count = 1;
-        for (int i = 1; i < s_len; ++i) {
-            if (S[i] == deque[tail].color) {
-                deque[tail].count++;
-            } else {
-                tail++;
-                deque[tail].color = S[i];
-                deque[tail].count = 1;
-            }
-        }
-    }
+    int len = strlen(S);
     
-    int is_empty = head > tail;
+    // 盤面の中央付近に初期配置
+    int mid = MAX_SIZE / 2;
+    left = mid;
+    right = mid + 1;
+    board[left] = 'b';  // 初期黒石
+    board[right] = 'w'; // 初期白石
 
-    for (int i = 0; i < t_len; ++i) {
-        char current_color = (i % 2 == 0) ? 'b' : 'w';
-        char move_dir = T[i];
+    // 初期盤面を出力
+    for (int i = left; i <= right; i++) {
+        printf("%c", board[i]);
+    }
+    printf("\n");
 
-        if (is_empty) {
-            head = START_IDX;
-            tail = START_IDX;
-            deque[head].color = current_color;
-            deque[head].count = 1;
-            is_empty = 0;
-            continue;
-        }
+    // 棋譜の処理
+    for (int i = 0; i < len; i++) {
+        turn = i % 2; // 交互に黒白を置く
+        char stone = (turn == 0) ? 'b' : 'w';
 
-        if (move_dir == 'L') {
-            if (deque[head].color == current_color) {
-                deque[head].count++;
-            } else { 
-                if (head == tail) {
-                    head--;
-                    deque[head].color = current_color;
-                    deque[head].count = 1;
-                } else {
-                    long long flip_count = deque[head].count;
-                    head++;
-                    
-                    deque[head].count += flip_count + 1;
-                }
-            }
+        if (S[i] == 'L') {
+            left--; // 左に移動
+            board[left] = stone;
         } else {
-            if (deque[tail].color == current_color) {
-                deque[tail].count++;
-            } else {
-                if (head == tail) {
-                    tail++;
-                    deque[tail].color = current_color;
-                    deque[tail].count = 1;
-                } else {
-                    long long flip_count = deque[tail].count;
-                    tail--;
-                    deque[tail].count += flip_count + 1;
-                }
-            }
+            right++; // 右に移動
+            board[right] = stone;
         }
+
+        // 挟んだ石をひっくり返す
+        int flip_start = (S[i] == 'L') ? left + 1 : right - 1;// ひっくり返す開始位置
+        int flip_end = (S[i] == 'L') ? right : left;// ひっくり返す終了位置
+
+        while (flip_start < flip_end) {// ひっくり返す範囲内
+            if (board[flip_start] != stone && board[flip_start] != '.') {// 石が挟まれている
+                board[flip_start] = stone;// 石をひっくり返す
+            }
+            flip_start++;// 次のマスへ
+        }
+
+        // 盤面を出力
+        for (int j = left; j <= right; j++) {
+            printf("%c", board[j]);
+        }
+        printf("\n");
     }
 
-    long long black_count = 0;
-    long long white_count = 0;
-    for (int i = head; i <= tail; ++i) {
-        if (deque[i].color == 'b') {
-            black_count += deque[i].count;
-        } else {
-            white_count += deque[i].count;
-        }
+    // 石の数をカウント
+    int black_count = 0, white_count = 0;
+    for (int i = left; i <= right; i++) {
+        if (board[i] == 'b') black_count++;
+        if (board[i] == 'w') white_count++;
     }
 
-    printf("%lld %lld\n", black_count, white_count);
+    // 結果を出力
+    printf("%d %d\n", black_count, white_count);
 
     return 0;
 }
